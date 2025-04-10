@@ -23,9 +23,49 @@ class Program
         }
 
         string username = args[1];
-        var chatNode = new ChatNode(ipAddress, username);
+        int tcpPort = 4546;
+        int udpPort = 4545;
+
+        for (int i = 2; i < args.Length; i++)
+        {
+            switch (args[i])
+            {
+                case "--tport":
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int tport))
+                    {
+                        tcpPort = tport;
+                        i++;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid TCP port specified");
+                        return;
+                    }
+                    break;
+
+                case "--uport":
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int uport))
+                    {
+                        udpPort = uport;
+                        i++;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid UDP port specified");
+                        return;
+                    }
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown argument: {args[i]}");
+                    return;
+            }
+        }
+
+        var chatNode = new ChatNode(ipAddress, username, tcpPort, udpPort);
 
         Console.WriteLine($"Chat node started as {username} on {ipAddress}. Type messages and press Enter to send.");
+        Console.WriteLine($"Using TCP port: {tcpPort}, UDP port: {udpPort}");
         Console.WriteLine("Type 'exit' to quit.");
 
         while (true)

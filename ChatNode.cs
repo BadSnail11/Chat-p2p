@@ -18,10 +18,12 @@ public class ChatNode
     private readonly ConcurrentDictionary<IPEndPoint, Peer> _peers = new ConcurrentDictionary<IPEndPoint, Peer>();
     private bool _isRunning = true;
 
-    public ChatNode(IPAddress localIpAddress, string username)
+    public ChatNode(IPAddress localIpAddress, string username, int tcpPort = 4546, int udpPort = 4545)
     {
         _localIpAddress = localIpAddress;
         _username = username;
+        _udpPort = udpPort;
+        _tcpPort = tcpPort;
 
         _udpClient = new UdpClient(new IPEndPoint(_localIpAddress, _udpPort));
         _udpClient.EnableBroadcast = true;
