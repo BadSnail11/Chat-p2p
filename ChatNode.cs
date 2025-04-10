@@ -23,20 +23,16 @@ public class ChatNode
         _localIpAddress = localIpAddress;
         _username = username;
 
-        // Setup UDP for discovery
         _udpClient = new UdpClient(new IPEndPoint(_localIpAddress, _udpPort));
         _udpClient.EnableBroadcast = true;
 
-        // Setup TCP for messaging
         _tcpListener = new TcpListener(_localIpAddress, _tcpPort);
         _tcpListener.Start();
 
-        // Start background tasks
         Task.Run(ListenForUdpBroadcasts);
         Task.Run(AcceptTcpConnections);
         Task.Run(SendPeriodicHeartbeat);
 
-        // Broadcast our presence
         BroadcastPresence();
     }
 
@@ -66,15 +62,13 @@ public class ChatNode
 
     private IPAddress GetBroadcastAddress()
     {
-        // For loopback addresses, use limited broadcast
         if (_localIpAddress.ToString().StartsWith("127."))
         {
             return IPAddress.Broadcast;
         }
 
-        // For real network interfaces, calculate broadcast address
         var bytes = _localIpAddress.GetAddressBytes();
-        bytes[3] = 255; // Simple broadcast for /24 networks
+        bytes[3] = 255;
         return new IPAddress(bytes);
     }
 
@@ -87,11 +81,9 @@ public class ChatNode
                 var result = await _udpClient.ReceiveAsync();
                 var username = Encoding.UTF8.GetString(result.Buffer);
 
-                // Don't connect to ourselves
                 if (result.RemoteEndPoint.Address.Equals(_localIpAddress))
                     continue;
 
-                // If this is a new peer, establish TCP connection
                 var tcpEndpoint = new IPEndPoint(result.RemoteEndPoint.Address, _tcpPort);
                 if (!_peers.ContainsKey(tcpEndpoint))
                 {
@@ -149,12 +141,6 @@ public class ChatNode
                     if (_peers.TryAdd(peerKey, peer))
                     {
                         LogEvent($"Peer connected: {username} ({remoteEndpoint.Address})");
-
-                        // Send our username as acknowledgment
-                        //var ourUsernameBytes = Encoding.UTF8.GetBytes(_username);
-                        //await stream.WriteAsync(ourUsernameBytes, 0, ourUsernameBytes.Length);
-
-                        // Start listening for messages from this peer
                         await ListenForPeerMessages(peer, stream);
                     }
                 }
@@ -176,7 +162,7 @@ public class ChatNode
             {
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 if (bytesRead == 0)
-                    break; // Connection closed
+                    break;
 
                 var message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                 LogEvent($"{peer.Username}: {message}", isIncoming: true);
@@ -184,11 +170,9 @@ public class ChatNode
         }
         catch (Exception)
         {
-            // Connection error
         }
         finally
         {
-            // Peer disconnected
             IPEndPoint peerEndpoint = new IPEndPoint(peer.IPAddress, _tcpPort);
             if (_peers.TryRemove(peerEndpoint, out _))
             {
@@ -213,12 +197,10 @@ public class ChatNode
 
             peer.TcpClient = tcpClient;
 
-            // Send our username first
             var stream = tcpClient.GetStream();
             var usernameBytes = Encoding.UTF8.GetBytes(_username);
             stream.Write(usernameBytes, 0, usernameBytes.Length);
 
-            // Start listening for messages
             _ = Task.Run(() => ListenForPeerMessages(peer, stream));
         }
         catch (Exception ex)
@@ -249,7 +231,6 @@ public class ChatNode
             }
             catch (Exception)
             {
-                // Mark peer as disconnected
                 if (_peers.TryRemove(peerEntry.Key, out _))
                 {
                     LogEvent($"Peer disconnected: {peer.Username} ({peer.IPAddress})");
@@ -262,7 +243,6 @@ public class ChatNode
     private void LogEvent(string message, bool isIncoming = false)
     {
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        //var direction = isIncoming ? "IN" : "OUT";
         Console.WriteLine($"[{timestamp}] {message}");
     }
 
