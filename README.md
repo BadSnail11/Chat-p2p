@@ -2,6 +2,8 @@
 
 Система: Windows 11
 
+Язык: С#
+
 Команда для запуска:
 .\chat.exe \<USER_IP> \<USERNAME>
 
